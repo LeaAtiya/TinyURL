@@ -6,18 +6,22 @@ const redirectController = {
             const { linkId } = req.params;
             const link = await Link.findById(linkId);
             if (!link) {
-                 res.status(404).json({ message: 'Link not found' });
+                res.status(404).json({ message: 'Link not found' });
             }
-            const value = req.query[link.targetParamName];
-            if (value && value !== "")
-                if (link.targetValues.find(x => x.value === value))
-                    link.clicks.push({ ipAddress: req.body.ip, targetParamValue: value });
+            else {
+                const value = req.query[link.targetParamName];
+                if (value && value !== "")
+                    if (link.targetValues.find(x => x.value === value))
+                        link.clicks.push({ ipAddress: req.connection.remoteAddress, targetParamValue: value });
+                    else {
+                        res.status(404).json({ message: 'Target is invalid' });
+                        return;
+                    }
                 else
-                    res.status(404).json({ message: 'Target is invalid' });
-            else
-                link.clicks.push({ ipAddress: req.body.ip });
-            await link.save();
-            res.redirect(301, link.originalUrl);
+                    link.clicks.push({ ipAddress: req.connection.remoteAddress });
+                await link.save();
+                res.redirect(301, link.originalUrl);
+            }
         } catch (err) {
             console.error(error);
             res.status(500).json({ message: 'Internal server error' });
